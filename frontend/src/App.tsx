@@ -2,6 +2,7 @@ import {useState} from 'react';
 import logo from './assets/images/logo-universal.png';
 import './App.css';
 import {Greet} from "../wailsjs/go/main/App";
+import {Button} from "@/components/ui/button";
 
 function App() {
     const [resultText, setResultText] = useState("Please enter your name below 👇");
@@ -19,7 +20,7 @@ function App() {
             <div id="result" className="result">{resultText}</div>
             <div id="input" className="input-box">
                 <input id="name" className="input" onChange={updateName} autoComplete="off" name="input" type="text"/>
-                <button className="btn" onClick={greet}>Greet</button>
+                <Button onClick={greet}>Greet</Button>
             </div>
         </div>
     )
