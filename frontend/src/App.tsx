@@ -22,7 +22,7 @@ function App() {
     // 主题
     const { theme, toggleTheme } = useTheme('light');
 
-    // 领域状态(路由/设置数据来自后端持久化接口,网卡为临时 mock)
+    // 领域状态(路由/设置/网卡数据均来自后端接口)
     const {
         routes,
         setRoutes,
@@ -46,17 +46,31 @@ function App() {
         onNoActiveRules: () => toast.error('请至少勾选一条需要生效的路由规则条目！'),
     });
 
-    // 网卡列表(启动服务前预取)
+    // 网卡列表:初始预取 + 手动刷新(启动服务前)
     const [nics, setNics] = useState<NetworkInterface[]>([]);
-    useEffect(() => {
-        let cancelled = false;
-        fetchNetworkInterfaces().then((data) => {
-            if (!cancelled) setNics(data);
-        });
-        return () => {
-            cancelled = true;
-        };
+    const [refreshingNics, setRefreshingNics] = useState(false);
+    const loadNics = useCallback(async () => {
+        setRefreshingNics(true);
+        try {
+            const data = await fetchNetworkInterfaces();
+            setNics(data);
+        } catch {
+            toast.error('网卡枚举失败,请稍后重试');
+        } finally {
+            setRefreshingNics(false);
+        }
     }, []);
+    useEffect(() => {
+        // 初始预取一次;loadNics 内部已处理错误与刷新状态
+        void loadNics();
+    }, [loadNics]);
+
+    // 默认选中:加载后若当前选中项不在列表中则自动选中第一个活动网卡
+    useEffect(() => {
+        if (nics.length > 0 && !nics.some((nic) => nic.id === selectedNic)) {
+            setSelectedNic(nics[0].id);
+        }
+    }, [nics, selectedNic, setSelectedNic]);
 
     // 视图与弹窗状态
     const [activeTab, setActiveTab] = useState<TabKey>('rules');
@@ -138,6 +152,8 @@ function App() {
                 onSelectNic={setSelectedNic}
                 isRunning={isRunning}
                 busy={busy}
+                refreshing={refreshingNics}
+                onRefreshNics={() => void loadNics()}
                 onToggleService={() => void toggleService()}
             />
 

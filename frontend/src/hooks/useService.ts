@@ -18,7 +18,7 @@ interface UseServiceOptions {
 export function useService({ routes, setRoutes, settings, addLog, onNoActiveRules }: UseServiceOptions) {
     const [isRunning, setIsRunning] = useState(false);
     const [busy, setBusy] = useState(false);
-    const [selectedNic, setSelectedNic] = useState('eth0');
+    const [selectedNic, setSelectedNic] = useState('');
 
     /** 切换服务启停(忙碌期间防重复触发) */
     const toggleService = useCallback(async () => {

@@ -10,6 +10,10 @@ export function DeleteRoute(arg1) {
   return window['go']['main']['App']['DeleteRoute'](arg1);
 }
 
+export function GetNetworkInterfaces() {
+  return window['go']['main']['App']['GetNetworkInterfaces']();
+}
+
 export function GetSettings() {
   return window['go']['main']['App']['GetSettings']();
 }

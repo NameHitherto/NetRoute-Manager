@@ -28,7 +28,6 @@ export interface NetworkInterface {
     id: string;
     name: string;
     type: 'wired' | 'wireless';
-    speed: string;
     active: boolean;
 }
 

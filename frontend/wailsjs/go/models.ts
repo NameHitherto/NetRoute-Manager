@@ -24,6 +24,24 @@ export namespace models {
 	        this.dnsMode = source["dnsMode"];
 	    }
 	}
+	export class NetworkInterface {
+	    id: string;
+	    name: string;
+	    type: string;
+	    active: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new NetworkInterface(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.name = source["name"];
+	        this.type = source["type"];
+	        this.active = source["active"];
+	    }
+	}
 	export class RouteRule {
 	    id: string;
 	    domain: string;

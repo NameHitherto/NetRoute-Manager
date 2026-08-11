@@ -35,7 +35,6 @@ type NetworkInterface struct {
 	ID     string  `json:"id"`
 	Name   string  `json:"name"`
 	Type   NicType `json:"type"`
-	Speed  string  `json:"speed"`
 	Active bool    `json:"active"`
 }
 

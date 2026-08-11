@@ -1,7 +1,8 @@
-import { Network, Play, Square } from 'lucide-react';
+import { Network, Play, RefreshCw, Square } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { cn } from '@/lib/utils';
 import type { NetworkInterface } from '@/types';
 
 interface ControlBarProps {
@@ -12,10 +13,14 @@ interface ControlBarProps {
     onToggleService: () => void;
     /** 服务启停中是否忙碌(防重复点击) */
     busy?: boolean;
+    /** 网卡重新检测中(禁用刷新按钮) */
+    refreshing?: boolean;
+    /** 主动重新检测网卡 */
+    onRefreshNics: () => void;
 }
 
 /** 核心控制区:绑定网卡选择 + 启动/停止路由服务 */
-export function ControlBar({ nics, selectedNic, onSelectNic, isRunning, onToggleService, busy }: ControlBarProps) {
+export function ControlBar({ nics, selectedNic, onSelectNic, isRunning, onToggleService, busy, refreshing, onRefreshNics }: ControlBarProps) {
     return (
         <section className="border-b border-border bg-card p-4 sm:p-5">
             <div className="mx-auto flex max-w-6xl flex-col justify-between gap-4 md:flex-row md:items-center">
@@ -32,14 +37,23 @@ export function ControlBar({ nics, selectedNic, onSelectNic, isRunning, onToggle
                         <SelectContent position="popper">
                             {nics.map((nic) => (
                                 <SelectItem key={nic.id} value={nic.id} className="font-mono">
-                                    {nic.name} ({nic.speed})
+                                    {nic.name}
                                 </SelectItem>
                             ))}
                         </SelectContent>
                     </Select>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        className="mt-1.5"
+                        onClick={onRefreshNics}
+                        disabled={refreshing || isRunning}
+                        aria-label="重新检测网卡"
+                    >
+                        <RefreshCw className={cn('size-3.5', refreshing && 'animate-spin')} />
+                        刷新网卡
+                    </Button>
                 </div>
-
-                {/* 启动 / 停止服务 */}
                 <div className="flex items-center gap-3">
                     <Button
                         size="lg"

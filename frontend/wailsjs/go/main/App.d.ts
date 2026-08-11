@@ -6,6 +6,8 @@ export function CreateRoute(arg1:models.RouteRuleInput):Promise<models.RouteRule
 
 export function DeleteRoute(arg1:string):Promise<void>;
 
+export function GetNetworkInterfaces():Promise<Array<models.NetworkInterface>>;
+
 export function GetSettings():Promise<models.AppSettings>;
 
 export function ListRoutes():Promise<Array<models.RouteRule>>;

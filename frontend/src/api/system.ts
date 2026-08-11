@@ -1,12 +1,11 @@
 import type { AppSettings, NetworkInterface, LogEntry } from '@/types';
-import { GetSettings, SaveSettings } from '../../wailsjs/go/main/App';
+import { GetNetworkInterfaces, GetSettings, SaveSettings } from '../../wailsjs/go/main/App';
 
 /**
  * 系统基础数据接口
  *
- * 设置读写已切换为 wailsjs 调用 Go 后端(持久化于
- * 用户文档目录/NetRoute-Manager/settings.json);
- * 网卡检测与运行日志暂未实装,保留临时 mock。
+ * 设置读写与物理网卡检测已切换为 wailsjs 调用 Go 后端;
+ * 运行日志暂未实装,保留临时 mock。
  */
 
 const delay = (ms = 200) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -21,12 +20,6 @@ export const DEFAULT_SETTINGS: AppSettings = {
     minToTray: true,
     dnsMode: 'UDP',
 };
-
-/** 模拟检测到的物理网卡列表(临时测试数据) */
-const NETWORK_INTERFACES: NetworkInterface[] = [
-    { id: 'eth0', name: '以太网 (Intel Ethernet Controller I225-V)', type: 'wired', speed: '2.5 Gbps', active: true },
-    { id: 'wlan0', name: 'Wi-Fi 6E (Intel Wi-Fi 6E AX211 160MHz)', type: 'wireless', speed: '1.2 Gbps', active: true },
-];
 
 /** 初始运行日志(临时测试数据) */
 const INITIAL_LOGS: LogEntry[] = [
@@ -44,10 +37,10 @@ export async function saveSettings(settings: AppSettings): Promise<void> {
     return SaveSettings(settings);
 }
 
-/** 获取物理网卡列表(临时 mock) */
+/** 获取本机活动物理网卡列表(后端 GetAdaptersAddresses 枚举) */
 export async function fetchNetworkInterfaces(): Promise<NetworkInterface[]> {
-    await delay();
-    return NETWORK_INTERFACES.map((nic) => ({ ...nic }));
+    // wailsjs 生成的模型中 type 为 string,后端保证为 wired/wireless,此处断言收敛
+    return (await GetNetworkInterfaces()) as NetworkInterface[];
 }
 
 /** 获取运行日志(临时 mock) */
