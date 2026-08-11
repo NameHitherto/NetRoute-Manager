@@ -4,7 +4,7 @@ import type { RouteRule, RouteRuleInput } from '@/types';
 
 /**
  * 路由规则状态管理:加载列表 + CRUD + 勾选 + 搜索过滤。
- * 增删改均通过 api 层(mock)执行,后端实装后此处无需改动。
+ * 增删改均通过 api 层调用后端持久化接口。
  */
 export function useRoutes() {
     const [routes, setRoutes] = useState<RouteRule[]>([]);

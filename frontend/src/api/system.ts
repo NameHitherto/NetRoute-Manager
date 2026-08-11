@@ -1,15 +1,17 @@
 import type { AppSettings, NetworkInterface, LogEntry } from '@/types';
+import { GetSettings, SaveSettings } from '../../wailsjs/go/main/App';
 
 /**
- * 系统基础数据接口 —— 临时 Mock 实现
+ * 系统基础数据接口
  *
- * 说明:当前仅作数据结构定义与声明,返回临时测试数据。
- * 待后端接口实现后,将各函数实现替换为 wailsjs 调用即可,调用方无需改动。
+ * 设置读写已切换为 wailsjs 调用 Go 后端(持久化于
+ * 用户文档目录/NetRoute-Manager/settings.json);
+ * 网卡检测与运行日志暂未实装,保留临时 mock。
  */
 
 const delay = (ms = 200) => new Promise((resolve) => setTimeout(resolve, ms));
 
-/** 默认全局设置(临时测试数据) */
+/** 默认全局设置(后端首载默认值,仅作前端初始态兜底) */
 export const DEFAULT_SETTINGS: AppSettings = {
     primaryDns: '223.5.5.5',
     secondaryDns: '114.114.114.114',
@@ -33,23 +35,22 @@ const INITIAL_LOGS: LogEntry[] = [
 
 /** 获取全局设置 */
 export async function fetchSettings(): Promise<AppSettings> {
-    await delay();
-    return { ...DEFAULT_SETTINGS };
+    // wailsjs 生成的模型中 dnsMode 为 string,后端校验保证其为合法枚举值,此处断言收敛为联合类型
+    return (await GetSettings()) as AppSettings;
 }
 
 /** 保存全局设置 */
 export async function saveSettings(settings: AppSettings): Promise<void> {
-    await delay(100);
-    void settings;
+    return SaveSettings(settings);
 }
 
-/** 获取物理网卡列表 */
+/** 获取物理网卡列表(临时 mock) */
 export async function fetchNetworkInterfaces(): Promise<NetworkInterface[]> {
     await delay();
     return NETWORK_INTERFACES.map((nic) => ({ ...nic }));
 }
 
-/** 获取运行日志 */
+/** 获取运行日志(临时 mock) */
 export async function fetchLogs(): Promise<LogEntry[]> {
     await delay();
     return INITIAL_LOGS.map((log) => ({ ...log }));

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { fetchNetworkInterfaces } from '@/api/system';
+import { fetchNetworkInterfaces, saveSettings } from '@/api/system';
 import { ControlBar } from '@/components/layout/ControlBar';
 import { TabNav } from '@/components/layout/TabNav';
 import { TitleBar } from '@/components/layout/TitleBar';
@@ -22,7 +22,7 @@ function App() {
     // 主题
     const { theme, toggleTheme } = useTheme('light');
 
-    // 领域状态(数据均来自 mock api,后端实装后自动切换)
+    // 领域状态(路由/设置数据来自后端持久化接口,网卡为临时 mock)
     const {
         routes,
         setRoutes,
@@ -101,11 +101,25 @@ function App() {
 
     const handleDeleteRule = useCallback(
         async (id: string) => {
-            await removeRoute(id);
-            addLog('info', '删除了一条自定义路由条目');
+            try {
+                await removeRoute(id);
+                addLog('info', '删除了一条自定义路由条目');
+            } catch {
+                toast.error('删除路由规则失败,请稍后重试');
+            }
         },
         [removeRoute, addLog]
     );
+
+    /** 保存全局设置到后端持久化层 */
+    const handleSaveSettings = useCallback(async () => {
+        try {
+            await saveSettings(settings);
+            addLog('info', '全局设置已保存');
+        } catch {
+            toast.error('保存设置失败,请稍后重试');
+        }
+    }, [settings, addLog]);
 
     const dark = theme === 'dark';
 
@@ -156,7 +170,12 @@ function App() {
                 </TabsContent>
 
                 <TabsContent value="settings" className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6">
-                    <SettingsView settings={settings} onUpdate={updateSettings} onApplyDnsPreset={applyDnsPreset} />
+                    <SettingsView
+                        settings={settings}
+                        onUpdate={updateSettings}
+                        onApplyDnsPreset={applyDnsPreset}
+                        onSave={handleSaveSettings}
+                    />
                 </TabsContent>
 
                 <TabsContent value="logs" className="flex min-h-0 flex-1 flex-col overflow-hidden p-4 sm:p-6">

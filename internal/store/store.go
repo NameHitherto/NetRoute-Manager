@@ -38,6 +38,16 @@ func New() (*Store, error) {
 	return NewWithDir(dir), nil
 }
 
+// NewOrPanic 同 New,但创建失败时直接 panic。
+// 供应用装配使用:数据目录解析失败属于无法恢复的启动错误。
+func NewOrPanic() *Store {
+	s, err := New()
+	if err != nil {
+		panic(err)
+	}
+	return s
+}
+
 // NewWithDir 创建使用指定根目录的 Store,便于测试注入临时目录。
 func NewWithDir(dir string) *Store {
 	return &Store{rootDir: dir}

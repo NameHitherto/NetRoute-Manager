@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Server, Sliders } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,10 +20,24 @@ interface SettingsViewProps {
     settings: AppSettings;
     onUpdate: (patch: Partial<AppSettings>) => void;
     onApplyDnsPreset: (primary: string, secondary: string) => void;
+    /** 持久化保存设置到后端(成功后由调用方反馈) */
+    onSave: () => Promise<void>;
 }
 
 /** 全局设置视图:DNS 上游配置 + 高级网络协议 */
-export function SettingsView({ settings, onUpdate, onApplyDnsPreset }: SettingsViewProps) {
+export function SettingsView({ settings, onUpdate, onApplyDnsPreset, onSave }: SettingsViewProps) {
+    const [saving, setSaving] = useState(false);
+
+    const handleSave = async () => {
+        if (saving) return;
+        setSaving(true);
+        try {
+            await onSave();
+        } finally {
+            setSaving(false);
+        }
+    };
+
     return (
         <div className="mx-auto max-w-4xl space-y-6">
             {/* DNS 服务器配置 */}
@@ -126,6 +141,13 @@ export function SettingsView({ settings, onUpdate, onApplyDnsPreset }: SettingsV
                     </div>
                 </CardContent>
             </Card>
+
+            {/* 保存操作区 */}
+            <div className="flex justify-end">
+                <Button onClick={() => void handleSave()} disabled={saving}>
+                    {saving ? '保存中...' : '保存设置'}
+                </Button>
+            </div>
         </div>
     );
 }
