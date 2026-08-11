@@ -1,21 +1,20 @@
 import { useCallback, useEffect, useState, type Dispatch, type SetStateAction } from 'react';
-import { mockResolveIp, startService, stopService } from '@/api/service';
-import type { AppSettings, LogLevel, RouteRule } from '@/types';
+import { getServiceStatus, startService, stopService } from '@/api/service';
+import type { LogLevel, RouteRule } from '@/types';
 
 interface UseServiceOptions {
     routes: RouteRule[];
     setRoutes: Dispatch<SetStateAction<RouteRule[]>>;
-    settings: AppSettings;
     addLog: (type: LogLevel, text: string) => void;
     /** 无勾选规则时的提示回调(UI 层注入,避免 hook 内依赖 UI) */
     onNoActiveRules?: () => void;
 }
 
 /**
- * 核心路由服务状态管理:启停服务 + 每秒轮询刷新解析地址。
- * 轮询与 IP 生成当前由 mock 驱动,后端实装后替换为服务端推送即可。
+ * 核心路由服务状态管理:启停服务 + 每秒轮询后端状态快照刷新解析结果。
+ * 启停与 DNS 解析均在后端执行,前端仅负责快照同步与展示。
  */
-export function useService({ routes, setRoutes, settings, addLog, onNoActiveRules }: UseServiceOptions) {
+export function useService({ routes, setRoutes, addLog, onNoActiveRules }: UseServiceOptions) {
     const [isRunning, setIsRunning] = useState(false);
     const [busy, setBusy] = useState(false);
     const [selectedNic, setSelectedNic] = useState('');
@@ -31,14 +30,12 @@ export function useService({ routes, setRoutes, settings, addLog, onNoActiveRule
             }
             setBusy(true);
             try {
-                const result = await startService({
-                    nicId: selectedNic,
-                    rules: routes,
-                    enableIpv6: settings.enableIpv6,
-                });
+                const result = await startService({ nicId: selectedNic, rules: routes });
                 setRoutes(result.rules);
                 setIsRunning(true);
                 addLog('success', `核心路由服务已启动 [网卡: ${selectedNic}],共生效 ${activeCount} 条规则`);
+            } catch (error) {
+                addLog('error', `核心路由服务启动失败: ${error instanceof Error ? error.message : String(error)}`);
             } finally {
                 setBusy(false);
             }
@@ -47,29 +44,46 @@ export function useService({ routes, setRoutes, settings, addLog, onNoActiveRule
             try {
                 await stopService();
                 setIsRunning(false);
-                addLog('warn', '核心路由服务已手动停止');
+                addLog('warn', '核心路由服务已手动停止,已清理全部临时路由');
+            } catch (error) {
+                addLog('error', `停止路由服务失败: ${error instanceof Error ? error.message : String(error)}`);
             } finally {
                 setBusy(false);
             }
         }
-    }, [busy, isRunning, routes, selectedNic, settings.enableIpv6, setRoutes, addLog, onNoActiveRules]);
+    }, [busy, isRunning, routes, selectedNic, setRoutes, addLog, onNoActiveRules]);
 
-    /** 运行中每秒轮询:到达刷新间隔则重新解析,否则累计秒数 */
+    /** 运行中每秒轮询后端状态快照:刷新解析结果并累计距上次解析秒数 */
     useEffect(() => {
         if (!isRunning) return;
         const interval = setInterval(() => {
-            setRoutes((prev) =>
-                prev.map((item) => {
-                    if (!item.checked) return item;
-                    if (item.lastResolvedSec >= settings.queryInterval) {
-                        return { ...item, resolvedIp: mockResolveIp(settings.enableIpv6), lastResolvedSec: 0 };
+            void getServiceStatus()
+                .then((status) => {
+                    if (!status.running) {
+                        // 后端已停止(如外部清理),同步前端状态
+                        setIsRunning(false);
+                        return;
                     }
-                    return { ...item, lastResolvedSec: item.lastResolvedSec + 1 };
+                    const byId = new Map(status.rules.map((r) => [r.id, r]));
+                    setRoutes((prev) =>
+                        prev.map((item) => {
+                            if (!item.checked) return item;
+                            const fresh = byId.get(item.id);
+                            if (!fresh) return item;
+                            return {
+                                ...item,
+                                resolvedIp: fresh.resolvedIp,
+                                lastResolvedSec: (item.lastResolvedSec ?? 0) + 1,
+                            };
+                        })
+                    );
                 })
-            );
+                .catch(() => {
+                    // 轮询失败静默,下轮重试
+                });
         }, 1000);
         return () => clearInterval(interval);
-    }, [isRunning, settings.queryInterval, settings.enableIpv6, setRoutes]);
+    }, [isRunning, setRoutes]);
 
     return { isRunning, busy, toggleService, selectedNic, setSelectedNic };
 }

@@ -29,10 +29,14 @@ export interface NetworkInterface {
     name: string;
     type: 'wired' | 'wireless';
     active: boolean;
+    /** IPv4 网关(网关转发路由所需;无网关网卡不可用于本服务) */
+    ipv4Gateway: string;
+    /** IPv6 网关(可为空) */
+    ipv6Gateway: string;
 }
 
-/** DNS 解析模式 */
-export type DnsMode = 'UDP' | 'DoH' | 'DoT';
+/** DNS 解析模式(本期仅支持 UDP 直连) */
+export type DnsMode = 'UDP';
 
 /** 全局设置 */
 export interface AppSettings {

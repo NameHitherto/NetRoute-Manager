@@ -14,6 +14,10 @@ export function GetNetworkInterfaces() {
   return window['go']['main']['App']['GetNetworkInterfaces']();
 }
 
+export function GetServiceStatus() {
+  return window['go']['main']['App']['GetServiceStatus']();
+}
+
 export function GetSettings() {
   return window['go']['main']['App']['GetSettings']();
 }
@@ -24,6 +28,14 @@ export function ListRoutes() {
 
 export function SaveSettings(arg1) {
   return window['go']['main']['App']['SaveSettings'](arg1);
+}
+
+export function StartService(arg1, arg2) {
+  return window['go']['main']['App']['StartService'](arg1, arg2);
+}
+
+export function StopService() {
+  return window['go']['main']['App']['StopService']();
 }
 
 export function UpdateRoute(arg1, arg2) {

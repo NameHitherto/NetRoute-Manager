@@ -41,7 +41,6 @@ function App() {
     const { isRunning, busy, toggleService, selectedNic, setSelectedNic } = useService({
         routes,
         setRoutes,
-        settings,
         addLog,
         onNoActiveRules: () => toast.error('请至少勾选一条需要生效的路由规则条目！'),
     });

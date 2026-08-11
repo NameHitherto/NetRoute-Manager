@@ -31,29 +31,28 @@ const (
 )
 
 // NetworkInterface 物理网卡。
+// IPv4Gateway/IPv6Gateway 为网关转发所需:AddHostRoute 将解析出的 IP
+// 路由到该网卡的网关(非 on-link 直连),故无 IPv4 网关的网卡不可用于本服务。
 type NetworkInterface struct {
-	ID     string  `json:"id"`
-	Name   string  `json:"name"`
-	Type   NicType `json:"type"`
-	Active bool    `json:"active"`
+	ID          string  `json:"id"`
+	Name        string  `json:"name"`
+	Type        NicType `json:"type"`
+	Active      bool    `json:"active"`
+	IPv4Gateway string  `json:"ipv4Gateway"`
+	IPv6Gateway string  `json:"ipv6Gateway"`
 }
 
 // DnsMode DNS 解析模式。
+// 本期仅支持 UDP 直连查询(设置中的主备 DNS 服务器);DoH/DoT 暂未实现。
 type DnsMode string
 
 const (
 	DnsModeUDP DnsMode = "UDP"
-	DnsModeDoH DnsMode = "DoH"
-	DnsModeDoT DnsMode = "DoT"
 )
 
 // Valid 判断 DNS 模式是否为合法取值。
 func (m DnsMode) Valid() bool {
-	switch m {
-	case DnsModeUDP, DnsModeDoH, DnsModeDoT:
-		return true
-	}
-	return false
+	return m == DnsModeUDP
 }
 
 // AppSettings 全局设置,与前端 AppSettings 类型对应。

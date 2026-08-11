@@ -8,10 +8,16 @@ export function DeleteRoute(arg1:string):Promise<void>;
 
 export function GetNetworkInterfaces():Promise<Array<models.NetworkInterface>>;
 
+export function GetServiceStatus():Promise<models.ServiceStartResult>;
+
 export function GetSettings():Promise<models.AppSettings>;
 
 export function ListRoutes():Promise<Array<models.RouteRule>>;
 
 export function SaveSettings(arg1:models.AppSettings):Promise<void>;
+
+export function StartService(arg1:string,arg2:Array<models.RouteRule>):Promise<models.ServiceStartResult>;
+
+export function StopService():Promise<void>;
 
 export function UpdateRoute(arg1:string,arg2:models.RouteRuleInput):Promise<models.RouteRule>;

@@ -18,7 +18,7 @@ func TestClassifyNicType(t *testing.T) {
 		{"蜂窝 WWAN PP", ifTypeWWANPP, "", false},
 		{"蜂窝 WWAN PP2", ifTypeWWANPP2, "", false},
 		{"软件回环", 24, "", false}, // IF_TYPE_SOFTWARE_LOOPBACK
-		{"隧道", 131, "", false},   // IF_TYPE_TUNNEL
+		{"隧道", 131, "", false},  // IF_TYPE_TUNNEL
 	}
 	for _, tc := range cases {
 		got, ok := classifyNicType(tc.ifType)
@@ -59,10 +59,10 @@ func TestIsPhysicalAdapterName(t *testing.T) {
 
 func TestDisplayName(t *testing.T) {
 	cases := []struct {
-		name     string
-		nicType  models.NicType
-		nicName  string
-		want     string
+		name    string
+		nicType models.NicType
+		nicName string
+		want    string
 	}{
 		{"有线", models.NicTypeWired, "以太网", "Ethernet adapter 以太网"},
 		{"无线", models.NicTypeWireless, "WLAN", "Wireless LAN adapter WLAN"},

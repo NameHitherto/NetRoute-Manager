@@ -81,7 +81,7 @@ func TestSettingsRoundTrip(t *testing.T) {
 		EnableIPv6:    true,
 		AutoStart:     false,
 		MinToTray:     false,
-		DNSMode:       models.DnsModeDoH,
+		DNSMode:       models.DnsModeUDP,
 	}
 	if err := s.SaveSettings(want); err != nil {
 		t.Fatalf("SaveSettings() 出错: %v", err)

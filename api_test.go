@@ -149,7 +149,7 @@ func TestSettingsRoundTrip(t *testing.T) {
 		EnableIPv6:    true,
 		AutoStart:     false,
 		MinToTray:     false,
-		DNSMode:       models.DnsModeDoH,
+		DNSMode:       models.DnsModeUDP,
 	}
 	if err := app.SaveSettings(want); err != nil {
 		t.Fatalf("SaveSettings() 出错: %v", err)
@@ -167,8 +167,8 @@ func TestSaveSettingsValidation(t *testing.T) {
 	app := newTestApp(t)
 	base := models.DefaultSettings()
 	cases := []struct {
-		name     string
-		mutate   func(*models.AppSettings)
+		name       string
+		mutate     func(*models.AppSettings)
 		wantSubstr string
 	}{
 		{"空主 DNS", func(s *models.AppSettings) { s.PrimaryDNS = " " }, "DNS"},

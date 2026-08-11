@@ -29,6 +29,8 @@ export namespace models {
 	    name: string;
 	    type: string;
 	    active: boolean;
+	    ipv4Gateway: string;
+	    ipv6Gateway: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new NetworkInterface(source);
@@ -40,6 +42,8 @@ export namespace models {
 	        this.name = source["name"];
 	        this.type = source["type"];
 	        this.active = source["active"];
+	        this.ipv4Gateway = source["ipv4Gateway"];
+	        this.ipv6Gateway = source["ipv6Gateway"];
 	    }
 	}
 	export class RouteRule {
@@ -81,6 +85,40 @@ export namespace models {
 	        this.port = source["port"];
 	        this.alias = source["alias"];
 	    }
+	}
+	export class ServiceStartResult {
+	    running: boolean;
+	    nicId: string;
+	    rules: RouteRule[];
+	
+	    static createFrom(source: any = {}) {
+	        return new ServiceStartResult(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.running = source["running"];
+	        this.nicId = source["nicId"];
+	        this.rules = this.convertValues(source["rules"], RouteRule);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
 	}
 
 }
