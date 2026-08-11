@@ -60,8 +60,8 @@ export interface LogEntry {
     text: string;
 }
 
-/** 视图 Tab 标识 */
-export type TabKey = 'rules' | 'settings' | 'logs';
+/** 视图标识:首页(路由规则/日志) / 设置 */
+export type ViewKey = 'home' | 'settings';
 
 /** 界面主题 */
 export type Theme = 'dark' | 'light';

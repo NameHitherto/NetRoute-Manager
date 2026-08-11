@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import type { AppSettings } from '@/types';
 
@@ -45,9 +44,8 @@ export function SettingsView({ settings, onUpdate, onApplyDnsPreset, onSave }: S
                 <CardHeader className="border-b border-border">
                     <CardTitle className="flex items-center gap-2 text-sm">
                         <Server className="size-4 text-muted-foreground" />
-                        DNS 上游服务器
+                        DNS 服务器
                     </CardTitle>
-                    <CardDescription>配置域名解析使用的上游 DNS 服务</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -97,21 +95,29 @@ export function SettingsView({ settings, onUpdate, onApplyDnsPreset, onSave }: S
                         </div>
                     </div>
 
-                    {/* 解析轮询间隔 */}
+                    {/* 解析轮询间隔:手动输入,单位为秒 */}
                     <div className="space-y-2 pt-2">
-                        <div className="flex items-center justify-between">
-                            <Label className="text-xs text-muted-foreground">DNS 解析轮询刷新间隔</Label>
-                            <span className="font-mono text-xs font-bold text-foreground">
-                                {settings.queryInterval} 秒
-                            </span>
+                        <Label htmlFor="query-interval" className="text-xs text-muted-foreground">
+                            DNS 解析轮询刷新间隔
+                        </Label>
+                        <div className="flex items-center gap-2">
+                            <Input
+                                id="query-interval"
+                                type="number"
+                                min={5}
+                                max={120}
+                                step={5}
+                                value={settings.queryInterval}
+                                onChange={(e) => {
+                                    // 留空时不写入,避免误存 0;合法数字直接更新
+                                    if (e.target.value === '') return;
+                                    const num = Number(e.target.value);
+                                    if (Number.isFinite(num)) onUpdate({ queryInterval: num });
+                                }}
+                                className="w-28 font-mono text-xs"
+                            />
+                            <span className="text-xs text-muted-foreground">秒</span>
                         </div>
-                        <Slider
-                            min={5}
-                            max={120}
-                            step={5}
-                            value={[settings.queryInterval]}
-                            onValueChange={(values) => onUpdate({ queryInterval: values[0] ?? 30 })}
-                        />
                     </div>
                 </CardContent>
             </Card>
@@ -123,7 +129,6 @@ export function SettingsView({ settings, onUpdate, onApplyDnsPreset, onSave }: S
                         <Sliders className="size-4 text-muted-foreground" />
                         高级网络协议
                     </CardTitle>
-                    <CardDescription>调整域名解析的协议与记录优先级</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <div className="flex items-center justify-between py-1">

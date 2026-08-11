@@ -1,4 +1,4 @@
-import { Network, Play, RefreshCw, Square } from 'lucide-react';
+import { ArrowLeft, Network, Play, RefreshCw, Square, Terminal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -17,10 +17,24 @@ interface ControlBarProps {
     refreshing?: boolean;
     /** 主动重新检测网卡 */
     onRefreshNics: () => void;
+    /** 运行中:日志视图开关(展开时显示返回按钮) */
+    logsOpen: boolean;
+    onToggleLogs: () => void;
 }
 
-/** 核心控制区:绑定网卡选择 + 启动/停止路由服务 */
-export function ControlBar({ nics, selectedNic, onSelectNic, isRunning, onToggleService, busy, refreshing, onRefreshNics }: ControlBarProps) {
+/** 核心控制区:绑定网卡选择 + 运行日志入口 + 启动/停止路由服务 */
+export function ControlBar({
+    nics,
+    selectedNic,
+    onSelectNic,
+    isRunning,
+    onToggleService,
+    busy,
+    refreshing,
+    onRefreshNics,
+    logsOpen,
+    onToggleLogs,
+}: ControlBarProps) {
     return (
         <section className="border-b border-border bg-card p-4 sm:p-5">
             <div className="mx-auto flex max-w-6xl flex-col justify-between gap-4 md:flex-row md:items-center">
@@ -55,6 +69,28 @@ export function ControlBar({ nics, selectedNic, onSelectNic, isRunning, onToggle
                     </Button>
                 </div>
                 <div className="flex items-center gap-3">
+                    {/* 运行中:日志入口(展开日志时变为返回按钮) */}
+                    {isRunning && (
+                        <Button
+                            variant="outline"
+                            size="lg"
+                            onClick={onToggleLogs}
+                            aria-label={logsOpen ? '返回路由规则列表' : '查看运行日志'}
+                            className="gap-2"
+                        >
+                            {logsOpen ? (
+                                <>
+                                    <ArrowLeft className="size-4" />
+                                    返回规则
+                                </>
+                            ) : (
+                                <>
+                                    <Terminal className="size-4" />
+                                    运行日志
+                                </>
+                            )}
+                        </Button>
+                    )}
                     <Button
                         size="lg"
                         onClick={onToggleService}

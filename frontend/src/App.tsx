@@ -2,21 +2,19 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { fetchNetworkInterfaces, saveSettings } from '@/api/system';
 import { ControlBar } from '@/components/layout/ControlBar';
-import { TabNav } from '@/components/layout/TabNav';
 import { TitleBar } from '@/components/layout/TitleBar';
 import { LogsView } from '@/components/logs/LogsView';
 import { RouteFormDialog } from '@/components/rules/RouteFormDialog';
 import { RoutesView } from '@/components/rules/RoutesView';
 import { SettingsView } from '@/components/settings/SettingsView';
 import { Toaster } from '@/components/ui/sonner';
-import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { useLogs } from '@/hooks/useLogs';
 import { useRoutes } from '@/hooks/useRoutes';
 import { useService } from '@/hooks/useService';
 import { useSettings } from '@/hooks/useSettings';
 import { useTheme } from '@/hooks/useTheme';
 import { cn } from '@/lib/utils';
-import type { NetworkInterface, RouteRule, RouteRuleInput, TabKey } from '@/types';
+import type { NetworkInterface, RouteRule, RouteRuleInput, ViewKey } from '@/types';
 
 function App() {
     // 主题
@@ -72,16 +70,22 @@ function App() {
     }, [nics, selectedNic, setSelectedNic]);
 
     // 视图与弹窗状态
-    const [activeTab, setActiveTab] = useState<TabKey>('rules');
+    const [view, setView] = useState<ViewKey>('home');
+    const [logsOpen, setLogsOpen] = useState(false);
     const [modalOpen, setModalOpen] = useState(false);
     const [editingItem, setEditingItem] = useState<RouteRule | null>(null);
+
+    // 服务停止后自动退出日志视图(日志入口仅在运行中显示)
+    useEffect(() => {
+        if (!isRunning) setLogsOpen(false);
+    }, [isRunning]);
 
     // 运行中仅展示已勾选条目(demo 行为),叠加搜索过滤
     const displayRoutes = useMemo(
         () => (isRunning ? visibleRoutes.filter((r) => r.checked) : visibleRoutes),
         [isRunning, visibleRoutes]
     );
-    const rulesCount = isRunning ? displayRoutes.length : routes.length;
+    const allChecked = routes.length > 0 && routes.every((r) => r.checked);
 
     const openAddModal = useCallback(() => {
         setEditingItem(null);
@@ -143,60 +147,63 @@ function App() {
                 dark && 'dark'
             )}
         >
-            <TitleBar theme={theme} onToggleTheme={toggleTheme}/>
-
-            <ControlBar
-                nics={nics}
-                selectedNic={selectedNic}
-                onSelectNic={setSelectedNic}
+            <TitleBar
+                theme={theme}
+                onToggleTheme={toggleTheme}
+                view={view}
+                onToggleSettings={() => setView((v) => (v === 'home' ? 'settings' : 'home'))}
                 isRunning={isRunning}
-                busy={busy}
-                refreshing={refreshingNics}
-                onRefreshNics={() => void loadNics()}
-                onToggleService={() => void toggleService()}
+                searchQuery={searchQuery}
+                onSearchChange={setSearchQuery}
+                onClearSearch={() => setSearchQuery('')}
+                allChecked={allChecked}
+                onToggleAll={toggleAll}
+                onAdd={openAddModal}
             />
 
-            <Tabs
-                value={activeTab}
-                onValueChange={(v) => setActiveTab(v as TabKey)}
-                className="flex min-h-0 flex-1 flex-col gap-0"
-            >
-                <TabNav
-                    activeTab={activeTab}
-                    rulesCount={rulesCount}
-                    searchQuery={searchQuery}
-                    onSearchChange={setSearchQuery}
-                    onClearSearch={() => setSearchQuery('')}
-                />
-
-                <TabsContent value="rules" className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6">
-                    <RoutesView
-                        routes={routes}
-                        visibleRoutes={displayRoutes}
-                        isRunning={isRunning}
-                        settings={settings}
-                        loading={loading}
-                        onToggleAll={toggleAll}
-                        onToggleCheck={toggleCheck}
-                        onDelete={(id) => void handleDeleteRule(id)}
-                        onAdd={openAddModal}
-                        onEdit={openEditModal}
-                    />
-                </TabsContent>
-
-                <TabsContent value="settings" className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6">
+            {view === 'settings' ? (
+                // 设置视图:标题栏下方整块区域切换为设置
+                <main className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6">
                     <SettingsView
                         settings={settings}
                         onUpdate={updateSettings}
                         onApplyDnsPreset={applyDnsPreset}
                         onSave={handleSaveSettings}
                     />
-                </TabsContent>
+                </main>
+            ) : (
+                // 首页:核心控制栏 + 路由规则管理 / 运行日志
+                <>
+                    <ControlBar
+                        nics={nics}
+                        selectedNic={selectedNic}
+                        onSelectNic={setSelectedNic}
+                        isRunning={isRunning}
+                        busy={busy}
+                        refreshing={refreshingNics}
+                        onRefreshNics={() => void loadNics()}
+                        onToggleService={() => void toggleService()}
+                        logsOpen={logsOpen}
+                        onToggleLogs={() => setLogsOpen((open) => !open)}
+                    />
 
-                <TabsContent value="logs" className="flex min-h-0 flex-1 flex-col overflow-hidden p-4 sm:p-6">
-                    <LogsView logs={logs} onClear={clearLogs} />
-                </TabsContent>
-            </Tabs>
+                    <main className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6">
+                        {logsOpen ? (
+                            <LogsView logs={logs} onClear={clearLogs} />
+                        ) : (
+                            <RoutesView
+                                visibleRoutes={displayRoutes}
+                                isRunning={isRunning}
+                                settings={settings}
+                                loading={loading}
+                                onToggleCheck={toggleCheck}
+                                onDelete={(id) => void handleDeleteRule(id)}
+                                onEdit={openEditModal}
+                            />
+                        )}
+                    </main>
+                </>
+            )}
 
             {/* 新建/编辑弹窗 */}
             <RouteFormDialog
