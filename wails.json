@@ -9,5 +9,11 @@
   "author": {
     "name": "NameHitherto",
     "email": "605351778@qq.com"
+  },
+  "info": {
+    "companyName": "NameHitherto",
+    "productName": "NetRoute-Manager",
+    "productVersion": "0.1.1.0",
+    "copyright": "Copyright © 2026 NameHitherto"
   }
 }
