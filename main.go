@@ -20,11 +20,12 @@ func main() {
 
 	// Create application with options
 	err := wails.Run(&options.App{
-		Title:     "NetRoute-Manager",
-		Width:     1024,
-		Height:    768,
-		MinWidth:  800,
-		MinHeight: 600,
+		Title:       "NetRoute-Manager",
+		Width:       1024,
+		Height:      768,
+		MinWidth:    800,
+		MinHeight:   600,
+		Frameless:   true, // 隐藏原生标题栏,由前端自定义标题栏提供窗口控制
 		AssetServer: &assetserver.Options{
 			Assets: assets,
 		},

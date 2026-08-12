@@ -56,6 +56,7 @@ func (a *App) shutdown(ctx context.Context) {
 
 // beforeClose 覆写原生标题栏关闭事件:非主动退出时拦截关闭,将窗口隐藏到系统托盘;
 // 仅当托盘菜单"退出"置位 quitting 后才放行,由 runtime.Quit 走正常退出流程。
+// 注意:关闭行为当前固定为隐藏到托盘,AppSettings.MinToTray 配置字段尚未接入本逻辑。
 func (a *App) beforeClose(ctx context.Context) bool {
 	if a.quitting.Load() {
 		return false // 放行:托盘"退出"触发的真正退出
