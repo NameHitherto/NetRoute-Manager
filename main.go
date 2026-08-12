@@ -15,6 +15,9 @@ func main() {
 	// Create an instance of the app structure
 	app := NewApp()
 
+	// 启动系统托盘(独立 goroutine),提供"显示主窗口/退出"菜单
+	go runTray(app)
+
 	// Create application with options
 	err := wails.Run(&options.App{
 		Title:  "NetRoute-Manager",
@@ -26,6 +29,7 @@ func main() {
 		BackgroundColour: &options.RGBA{R: 27, G: 38, B: 54, A: 1},
 		OnStartup:        app.startup,
 		OnShutdown:       app.shutdown,
+		OnBeforeClose:    app.beforeClose, // 覆写关闭事件:隐藏到托盘而非退出
 		Bind: []interface{}{
 			app,
 		},
