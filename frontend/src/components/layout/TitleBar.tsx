@@ -1,5 +1,5 @@
 import { ArrowLeft, Moon, Plus, Search, Settings, Sun, X, Zap } from 'lucide-react';
-import { WindowToggleMaximise } from '../../../wailsjs/runtime/runtime';
+import { Window } from '@wailsio/runtime';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
@@ -52,7 +52,7 @@ export function TitleBar({
                 // 交互元素(no-drag)及其内部节点双击均不会误触
                 const target = e.target as HTMLElement;
                 if (getComputedStyle(target).getPropertyValue('--wails-draggable') !== 'drag') return;
-                void WindowToggleMaximise();
+                void Window.ToggleMaximise();
             }}
             className={cn(
                 'flex h-12 items-center justify-between gap-3 border-b pl-4 text-xs',

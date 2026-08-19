@@ -13,7 +13,7 @@
 - **全局设置**：上游 DNS 服务器（主 / 备 + 阿里、腾讯 DNSPod、Cloudflare、Google 快捷预设）、解析轮询间隔（手动数字输入，单位秒）、优先使用 IPv6 解析记录。
 - **运行日志**：终端风格的实时日志面板，展示服务启停、DNS 解析与路由注入事件，支持一键清空。
 - **界面体验**：亮 / 暗主题切换、应用启动时自动请求管理员提权（路由操作需要）、自定义闪电图标。
-- **系统托盘驻留**：点击标题栏关闭按钮时应用隐藏到系统托盘而非退出（路由服务继续运行），可通过托盘菜单「显示主窗口」恢复窗口、或「退出」彻底退出并清理临时路由。
+- **系统托盘驻留**：点击标题栏关闭按钮时应用隐藏到系统托盘而非退出（路由服务继续运行），可通过托盘菜单「显示主窗口」恢复窗口、或「退出」彻底退出并清理临时路由。托盘基于 Wails v3 原生 `SystemTray` API 实现，无第三方依赖。
 - **无边框自定义标题栏**：隐藏 Windows 原生标题栏（`Frameless`），由前端自绘标题栏提供最小化 / 最大化还原 / 关闭（隐藏到托盘）按钮，支持标题栏拖拽移动与双击最大化；窗口最小尺寸限制（800×600）依旧生效。注意：无边框模式下无法通过窗口边缘拖拽调整大小（Wails 框架限制），仅能通过最大化 / 还原切换尺寸。
 
 ## 与原 CLI 的增强对照
@@ -29,20 +29,20 @@
 
 ## 技术栈
 
-- **桌面框架**：[Wails v2](https://wails.io)（Go 后端 + Web 前端）
+- **桌面框架**：[Wails v3](https://v3.wails.io)（Go 后端 + Web 前端，原生 SystemTray / 单实例 / 事件系统）
 - **后端**：Go（`internal/dns` DNS 解析、`internal/route` 主机路由注入、`internal/nics` 物理网卡识别、`internal/service` 路由服务引擎、`internal/store` JSON 持久化）
 - **前端**：React 19 · TypeScript · Vite · Tailwind CSS 4 · shadcn/ui 风格组件 · lucide-react · radix-ui
 
 ## 快速开始（开发）
 
-前置要求：Go、Node.js、Wails CLI。
+前置要求：Go、Node.js、Wails v3 CLI（`wails3`）。
 
 ```bash
 # 前端依赖
 cd frontend && npm install && cd ..
 
-# 开发模式(前端热重载,浏览器调试地址 http://localhost:34115)
-wails dev
+# 开发模式(前端热重载)
+wails3 dev
 ```
 
 仅调试前端时，可在 `frontend/` 下运行 `npm run dev`（后端接口不可用时界面为 mock 行为）。
@@ -50,11 +50,11 @@ wails dev
 ## 构建
 
 ```bash
-# 生产包(frontend 自动执行 npm run build,产物在 build/bin/)
-wails build
+# 生产构建(frontend 自动构建,产物在 bin/NetRoute-Manager.exe)
+wails3 build
 ```
 
-仅构建前端：`cd frontend && npm run build`。
+仅构建前端：`cd frontend && npm run build`。前端 bindings 变更时重新生成：`wails3 generate bindings -ts`。
 
 应用图标源文件位于 `build/appicon.png`（1024×1024），Windows exe 图标为 `build/windows/icon.ico`（含 16–256 全部尺寸），均为闪电（lucide `zap`）风格。
 
@@ -77,8 +77,11 @@ wails build
 ## 项目结构
 
 ```
-├── app.go / main.go        # Wails 应用入口与生命周期
-├── api_*.go                # Wails 绑定接口(路由/设置/服务/网卡)
+├── main.go                 # Wails v3 应用入口(窗口/托盘/单实例/生命周期)
+├── routes_service.go       # 路由规则 CRUD 绑定服务
+├── nics_service.go         # 网卡枚举绑定服务
+├── engine_service.go       # 核心服务启停/状态绑定服务
+├── settings_service.go     # 全局设置读写绑定服务
 ├── internal/
 │   ├── dns/                # DNS 解析器
 │   ├── route/              # 主机路由注入与清理(Windows 实现)
@@ -86,6 +89,7 @@ wails build
 │   ├── service/            # 路由服务引擎(轮询/对账/崩溃恢复)
 │   └── store/              # JSON 本地持久化
 └── frontend/
+    ├── bindings/           # wails3 生成的 TS 绑定(wails3 generate bindings)
     ├── src/components/     # 界面组件(标题栏/控制栏/规则/设置/日志)
     ├── src/hooks/          # 领域状态管理
     └── src/api/            # 后端接口调用封装

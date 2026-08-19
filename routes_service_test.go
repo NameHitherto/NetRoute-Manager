@@ -9,15 +9,15 @@ import (
 	"NetRoute-Manager/internal/store"
 )
 
-// newTestApp 创建基于临时目录的 App,避免污染真实用户数据目录。
-func newTestApp(t *testing.T) *App {
+// newTestRoutesService 创建基于临时目录的 RoutesService,避免污染真实用户数据目录。
+func newTestRoutesService(t *testing.T) *RoutesService {
 	t.Helper()
-	return &App{store: store.NewWithDir(t.TempDir())}
+	return NewRoutesService(store.NewWithDir(t.TempDir()))
 }
 
 func TestCreateRoute(t *testing.T) {
-	app := newTestApp(t)
-	rule, err := app.CreateRoute(models.RouteRuleInput{Domain: "api.openai.com", Port: "443", Alias: "AI API"})
+	svc := newTestRoutesService(t)
+	rule, err := svc.CreateRoute(models.RouteRuleInput{Domain: "api.openai.com", Port: "443", Alias: "AI API"})
 	if err != nil {
 		t.Fatalf("CreateRoute() 出错: %v", err)
 	}
@@ -33,11 +33,11 @@ func TestCreateRoute(t *testing.T) {
 }
 
 func TestListRoutes(t *testing.T) {
-	app := newTestApp(t)
-	if _, err := app.CreateRoute(models.RouteRuleInput{Domain: "github.com", Port: "443", Alias: "GitHub"}); err != nil {
+	svc := newTestRoutesService(t)
+	if _, err := svc.CreateRoute(models.RouteRuleInput{Domain: "github.com", Port: "443", Alias: "GitHub"}); err != nil {
 		t.Fatalf("CreateRoute() 出错: %v", err)
 	}
-	routes, err := app.ListRoutes()
+	routes, err := svc.ListRoutes()
 	if err != nil {
 		t.Fatalf("ListRoutes() 出错: %v", err)
 	}
@@ -47,8 +47,8 @@ func TestListRoutes(t *testing.T) {
 }
 
 func TestUpdateRoute(t *testing.T) {
-	app := newTestApp(t)
-	rule, err := app.CreateRoute(models.RouteRuleInput{Domain: "github.com", Port: "443", Alias: "GitHub"})
+	svc := newTestRoutesService(t)
+	rule, err := svc.CreateRoute(models.RouteRuleInput{Domain: "github.com", Port: "443", Alias: "GitHub"})
 	if err != nil {
 		t.Fatalf("CreateRoute() 出错: %v", err)
 	}
@@ -56,13 +56,13 @@ func TestUpdateRoute(t *testing.T) {
 	rule.Checked = false
 	rule.ResolvedIP = "1.2.3.4"
 	rule.LastResolvedSec = 12
-	routes, _ := app.ListRoutes()
+	routes, _ := svc.ListRoutes()
 	routes[0] = rule
-	if err := app.store.SaveRoutes(routes); err != nil {
+	if err := svc.store.SaveRoutes(routes); err != nil {
 		t.Fatalf("SaveRoutes() 出错: %v", err)
 	}
 
-	updated, err := app.UpdateRoute(rule.ID, models.RouteRuleInput{Domain: "raw.githubusercontent.com", Port: "443", Alias: "Raw 加速"})
+	updated, err := svc.UpdateRoute(rule.ID, models.RouteRuleInput{Domain: "raw.githubusercontent.com", Port: "443", Alias: "Raw 加速"})
 	if err != nil {
 		t.Fatalf("UpdateRoute() 出错: %v", err)
 	}
@@ -75,31 +75,31 @@ func TestUpdateRoute(t *testing.T) {
 }
 
 func TestUpdateRouteNotFound(t *testing.T) {
-	app := newTestApp(t)
-	_, err := app.UpdateRoute("no-such-id", models.RouteRuleInput{Domain: "a.com", Port: "443"})
+	svc := newTestRoutesService(t)
+	_, err := svc.UpdateRoute("no-such-id", models.RouteRuleInput{Domain: "a.com", Port: "443"})
 	if !errors.Is(err, ErrRouteNotFound) {
 		t.Fatalf("UpdateRoute() 不存在应返回 ErrRouteNotFound,got %v", err)
 	}
 }
 
 func TestDeleteRoute(t *testing.T) {
-	app := newTestApp(t)
-	rule, err := app.CreateRoute(models.RouteRuleInput{Domain: "github.com", Port: "443", Alias: "GitHub"})
+	svc := newTestRoutesService(t)
+	rule, err := svc.CreateRoute(models.RouteRuleInput{Domain: "github.com", Port: "443", Alias: "GitHub"})
 	if err != nil {
 		t.Fatalf("CreateRoute() 出错: %v", err)
 	}
-	if err := app.DeleteRoute(rule.ID); err != nil {
+	if err := svc.DeleteRoute(rule.ID); err != nil {
 		t.Fatalf("DeleteRoute() 出错: %v", err)
 	}
-	routes, _ := app.ListRoutes()
+	routes, _ := svc.ListRoutes()
 	if len(routes) != 0 {
 		t.Fatalf("删除后应无残留,got %d 条", len(routes))
 	}
 }
 
 func TestDeleteRouteNotFound(t *testing.T) {
-	app := newTestApp(t)
-	if err := app.DeleteRoute("no-such-id"); !errors.Is(err, ErrRouteNotFound) {
+	svc := newTestRoutesService(t)
+	if err := svc.DeleteRoute("no-such-id"); !errors.Is(err, ErrRouteNotFound) {
 		t.Fatalf("DeleteRoute() 不存在应返回 ErrRouteNotFound,got %v", err)
 	}
 }
@@ -107,14 +107,14 @@ func TestDeleteRouteNotFound(t *testing.T) {
 // TestPersistenceAcrossStores 验证持久化闭环:数据落盘后,新实例仍可读取。
 func TestPersistenceAcrossStores(t *testing.T) {
 	dir := t.TempDir()
-	app1 := &App{store: store.NewWithDir(dir)}
-	rule, err := app1.CreateRoute(models.RouteRuleInput{Domain: "api.openai.com", Port: "443", Alias: "AI API"})
+	svc1 := NewRoutesService(store.NewWithDir(dir))
+	rule, err := svc1.CreateRoute(models.RouteRuleInput{Domain: "api.openai.com", Port: "443", Alias: "AI API"})
 	if err != nil {
 		t.Fatalf("CreateRoute() 出错: %v", err)
 	}
 
-	app2 := &App{store: store.NewWithDir(dir)}
-	routes, err := app2.ListRoutes()
+	svc2 := NewRoutesService(store.NewWithDir(dir))
+	routes, err := svc2.ListRoutes()
 	if err != nil {
 		t.Fatalf("新实例 ListRoutes() 出错: %v", err)
 	}
@@ -124,7 +124,7 @@ func TestPersistenceAcrossStores(t *testing.T) {
 }
 
 func TestCreateRouteValidation(t *testing.T) {
-	app := newTestApp(t)
+	svc := newTestRoutesService(t)
 	cases := []struct {
 		name  string
 		input models.RouteRuleInput
@@ -134,14 +134,14 @@ func TestCreateRouteValidation(t *testing.T) {
 		{"非法端口-越界", models.RouteRuleInput{Domain: "a.com", Port: "70000"}},
 	}
 	for _, tc := range cases {
-		if _, err := app.CreateRoute(tc.input); err == nil {
+		if _, err := svc.CreateRoute(tc.input); err == nil {
 			t.Errorf("%s: 应校验失败", tc.name)
 		}
 	}
 }
 
 func TestSettingsRoundTrip(t *testing.T) {
-	app := newTestApp(t)
+	svc := NewSettingsService(store.NewWithDir(t.TempDir()))
 	want := models.AppSettings{
 		PrimaryDNS:    "8.8.8.8",
 		SecondaryDNS:  "8.8.4.4",
@@ -151,10 +151,10 @@ func TestSettingsRoundTrip(t *testing.T) {
 		MinToTray:     false,
 		DNSMode:       models.DnsModeUDP,
 	}
-	if err := app.SaveSettings(want); err != nil {
+	if err := svc.SaveSettings(want); err != nil {
 		t.Fatalf("SaveSettings() 出错: %v", err)
 	}
-	got, err := app.GetSettings()
+	got, err := svc.GetSettings()
 	if err != nil {
 		t.Fatalf("GetSettings() 出错: %v", err)
 	}
@@ -164,7 +164,7 @@ func TestSettingsRoundTrip(t *testing.T) {
 }
 
 func TestSaveSettingsValidation(t *testing.T) {
-	app := newTestApp(t)
+	svc := NewSettingsService(store.NewWithDir(t.TempDir()))
 	base := models.DefaultSettings()
 	cases := []struct {
 		name       string
@@ -179,7 +179,7 @@ func TestSaveSettingsValidation(t *testing.T) {
 	for _, tc := range cases {
 		s := base
 		tc.mutate(&s)
-		err := app.SaveSettings(s)
+		err := svc.SaveSettings(s)
 		if err == nil {
 			t.Errorf("%s: 应校验失败", tc.name)
 			continue

@@ -12,7 +12,7 @@ import (
 	"NetRoute-Manager/internal/store"
 )
 
-// apiFakeResolver 供 App 层测试注入的最小可编程解析器。
+// apiFakeResolver 供 EngineService 层测试注入的最小可编程解析器。
 type apiFakeResolver struct {
 	mu      sync.Mutex
 	results map[string][]netip.Addr
@@ -73,25 +73,26 @@ func (f *apiFakeRouter) snapshot() map[string]struct{} {
 	return out
 }
 
-// newServiceTestApp 创建带真实引擎(注入 fake 解析器/路由管理器)的 App。
-func newServiceTestApp(t *testing.T, resolver *apiFakeResolver, router *apiFakeRouter) (*App, *apiFakeRouter) {
+// newTestEngineService 创建带真实引擎(注入 fake 解析器/路由管理器)的 EngineService。
+func newTestEngineService(t *testing.T, resolver *apiFakeResolver, router *apiFakeRouter) *EngineService {
 	t.Helper()
 	dir := t.TempDir()
 	engine := service.New(resolver, router, dir)
-	return &App{store: store.NewWithDir(dir), engine: engine}, router
+	return NewEngineService(store.NewWithDir(dir), engine)
 }
 
 func TestStartService(t *testing.T) {
 	resolver := &apiFakeResolver{results: map[string][]netip.Addr{
 		"api.example.com": {netip.MustParseAddr("1.2.3.4")},
 	}}
-	app, router := newServiceTestApp(t, resolver, newAPIFakeRouter())
+	router := newAPIFakeRouter()
+	svc := newTestEngineService(t, resolver, router)
 
 	rules := []models.RouteRule{
 		{ID: "r1", Domain: "api.example.com", Checked: true},
 		{ID: "r2", Domain: "off.example.com", Checked: false},
 	}
-	result, err := app.StartService("nic-guid", rules)
+	result, err := svc.StartService("nic-guid", rules)
 	if err != nil {
 		t.Fatalf("StartService() 出错: %v", err)
 	}
@@ -108,13 +109,13 @@ func TestStartService(t *testing.T) {
 
 func TestStartServiceTwiceFails(t *testing.T) {
 	resolver := &apiFakeResolver{results: map[string][]netip.Addr{"a.com": {netip.MustParseAddr("1.1.1.1")}}}
-	app, _ := newServiceTestApp(t, resolver, newAPIFakeRouter())
+	svc := newTestEngineService(t, resolver, newAPIFakeRouter())
 	rules := []models.RouteRule{{ID: "r1", Domain: "a.com", Checked: true}}
 
-	if _, err := app.StartService("nic", rules); err != nil {
+	if _, err := svc.StartService("nic", rules); err != nil {
 		t.Fatalf("首次 StartService() 出错: %v", err)
 	}
-	if _, err := app.StartService("nic", rules); err == nil {
+	if _, err := svc.StartService("nic", rules); err == nil {
 		t.Fatal("重复 StartService() 应返回错误")
 	}
 }
@@ -122,13 +123,13 @@ func TestStartServiceTwiceFails(t *testing.T) {
 func TestStopServiceCleansRoutes(t *testing.T) {
 	resolver := &apiFakeResolver{results: map[string][]netip.Addr{"a.com": {netip.MustParseAddr("1.1.1.1")}}}
 	router := newAPIFakeRouter()
-	app, _ := newServiceTestApp(t, resolver, router)
+	svc := newTestEngineService(t, resolver, router)
 	rules := []models.RouteRule{{ID: "r1", Domain: "a.com", Checked: true}}
 
-	if _, err := app.StartService("nic", rules); err != nil {
+	if _, err := svc.StartService("nic", rules); err != nil {
 		t.Fatalf("StartService() 出错: %v", err)
 	}
-	if err := app.StopService(); err != nil {
+	if err := svc.StopService(); err != nil {
 		t.Fatalf("StopService() 出错: %v", err)
 	}
 	if got := router.snapshot(); len(got) != 0 {
@@ -138,9 +139,9 @@ func TestStopServiceCleansRoutes(t *testing.T) {
 
 func TestGetServiceStatus(t *testing.T) {
 	resolver := &apiFakeResolver{results: map[string][]netip.Addr{"a.com": {netip.MustParseAddr("1.1.1.1")}}}
-	app, _ := newServiceTestApp(t, resolver, newAPIFakeRouter())
+	svc := newTestEngineService(t, resolver, newAPIFakeRouter())
 
-	st, err := app.GetServiceStatus()
+	st, err := svc.GetServiceStatus()
 	if err != nil {
 		t.Fatalf("GetServiceStatus() 出错: %v", err)
 	}
@@ -149,15 +150,15 @@ func TestGetServiceStatus(t *testing.T) {
 	}
 
 	rules := []models.RouteRule{{ID: "r1", Domain: "a.com", Checked: true}}
-	if _, err := app.StartService("nic", rules); err != nil {
+	if _, err := svc.StartService("nic", rules); err != nil {
 		t.Fatalf("StartService() 出错: %v", err)
 	}
-	st, err = app.GetServiceStatus()
+	st, err = svc.GetServiceStatus()
 	if err != nil {
 		t.Fatalf("GetServiceStatus() 出错: %v", err)
 	}
 	if !st.Running || len(st.Rules) != 1 {
 		t.Fatalf("运行中状态不符: %#v", st)
 	}
-	_ = app.StopService()
+	_ = svc.StopService()
 }

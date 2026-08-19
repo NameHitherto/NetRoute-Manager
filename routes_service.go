@@ -8,20 +8,31 @@ import (
 	"github.com/google/uuid"
 
 	"NetRoute-Manager/internal/models"
+	"NetRoute-Manager/internal/store"
 )
 
+// RoutesService 路由规则 CRUD 服务,暴露给前端绑定调用。
+type RoutesService struct {
+	store *store.Store
+}
+
+// NewRoutesService 创建路由规则服务。
+func NewRoutesService(s *store.Store) *RoutesService {
+	return &RoutesService{store: s}
+}
+
 // ListRoutes 返回全部路由规则(持久化数据)。
-func (a *App) ListRoutes() ([]models.RouteRule, error) {
-	return a.store.LoadRoutes()
+func (s *RoutesService) ListRoutes() ([]models.RouteRule, error) {
+	return s.store.LoadRoutes()
 }
 
 // CreateRoute 新建一条路由规则并持久化,返回创建后的完整条目。
 // 与前端 mock 行为一致:新建条目默认勾选(checked=true)。
-func (a *App) CreateRoute(input models.RouteRuleInput) (models.RouteRule, error) {
+func (s *RoutesService) CreateRoute(input models.RouteRuleInput) (models.RouteRule, error) {
 	if err := validateRouteInput(input); err != nil {
 		return models.RouteRule{}, err
 	}
-	routes, err := a.store.LoadRoutes()
+	routes, err := s.store.LoadRoutes()
 	if err != nil {
 		return models.RouteRule{}, err
 	}
@@ -33,7 +44,7 @@ func (a *App) CreateRoute(input models.RouteRuleInput) (models.RouteRule, error)
 		Checked: true,
 	}
 	routes = append(routes, rule)
-	if err := a.store.SaveRoutes(routes); err != nil {
+	if err := s.store.SaveRoutes(routes); err != nil {
 		return models.RouteRule{}, err
 	}
 	return rule, nil
@@ -41,11 +52,11 @@ func (a *App) CreateRoute(input models.RouteRuleInput) (models.RouteRule, error)
 
 // UpdateRoute 更新一条已存在的路由规则(仅更新 domain/port/alias,
 // 保留 checked/resolvedIp/lastResolvedSec 等运行期字段)。
-func (a *App) UpdateRoute(id string, input models.RouteRuleInput) (models.RouteRule, error) {
+func (s *RoutesService) UpdateRoute(id string, input models.RouteRuleInput) (models.RouteRule, error) {
 	if err := validateRouteInput(input); err != nil {
 		return models.RouteRule{}, err
 	}
-	routes, err := a.store.LoadRoutes()
+	routes, err := s.store.LoadRoutes()
 	if err != nil {
 		return models.RouteRule{}, err
 	}
@@ -56,7 +67,7 @@ func (a *App) UpdateRoute(id string, input models.RouteRuleInput) (models.RouteR
 		routes[i].Domain = strings.TrimSpace(input.Domain)
 		routes[i].Port = strings.TrimSpace(input.Port)
 		routes[i].Alias = strings.TrimSpace(input.Alias)
-		if err := a.store.SaveRoutes(routes); err != nil {
+		if err := s.store.SaveRoutes(routes); err != nil {
 			return models.RouteRule{}, err
 		}
 		return routes[i], nil
@@ -65,15 +76,15 @@ func (a *App) UpdateRoute(id string, input models.RouteRuleInput) (models.RouteR
 }
 
 // DeleteRoute 删除一条路由规则。
-func (a *App) DeleteRoute(id string) error {
-	routes, err := a.store.LoadRoutes()
+func (s *RoutesService) DeleteRoute(id string) error {
+	routes, err := s.store.LoadRoutes()
 	if err != nil {
 		return err
 	}
 	for i, r := range routes {
 		if r.ID == id {
 			routes = append(routes[:i], routes[i+1:]...)
-			return a.store.SaveRoutes(routes)
+			return s.store.SaveRoutes(routes)
 		}
 	}
 	return ErrRouteNotFound

@@ -5,19 +5,30 @@ import (
 	"strings"
 
 	"NetRoute-Manager/internal/models"
+	"NetRoute-Manager/internal/store"
 )
 
+// SettingsService 全局设置读写服务,暴露给前端绑定调用。
+type SettingsService struct {
+	store *store.Store
+}
+
+// NewSettingsService 创建设置服务。
+func NewSettingsService(s *store.Store) *SettingsService {
+	return &SettingsService{store: s}
+}
+
 // GetSettings 返回当前全局设置(持久化数据,缺失字段自动回退默认值)。
-func (a *App) GetSettings() (models.AppSettings, error) {
-	return a.store.LoadSettings()
+func (s *SettingsService) GetSettings() (models.AppSettings, error) {
+	return s.store.LoadSettings()
 }
 
 // SaveSettings 校验并持久化全局设置。
-func (a *App) SaveSettings(settings models.AppSettings) error {
+func (s *SettingsService) SaveSettings(settings models.AppSettings) error {
 	if err := validateSettings(settings); err != nil {
 		return err
 	}
-	return a.store.SaveSettings(settings)
+	return s.store.SaveSettings(settings)
 }
 
 // validateSettings 校验全局设置:主备 DNS 必填、查询间隔为正数、dnsMode 合法。

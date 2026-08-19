@@ -1,10 +1,11 @@
 import type { AppSettings, NetworkInterface, LogEntry } from '@/types';
-import { GetNetworkInterfaces, GetSettings, SaveSettings } from '../../wailsjs/go/main/App';
+import { NicsService, SettingsService } from '../../bindings/NetRoute-Manager';
+import type { AppSettings as ModelAppSettings } from '../../bindings/NetRoute-Manager/internal/models/models';
 
 /**
  * 系统基础数据接口
  *
- * 设置读写与物理网卡检测已切换为 wailsjs 调用 Go 后端;
+ * 设置读写与物理网卡检测通过 wails3 生成的 Service 绑定调用 Go 后端;
  * 运行日志暂未实装,保留临时 mock。
  */
 
@@ -28,19 +29,20 @@ const INITIAL_LOGS: LogEntry[] = [
 
 /** 获取全局设置 */
 export async function fetchSettings(): Promise<AppSettings> {
-    // wailsjs 生成的模型中 dnsMode 为 string,后端校验保证其为合法枚举值,此处断言收敛为联合类型
-    return (await GetSettings()) as AppSettings;
+    // wails3 生成的模型中 dnsMode 为 DnsMode 枚举,后端校验保证其为合法枚举值,此处断言收敛为联合类型
+    return (await SettingsService.GetSettings()) as unknown as AppSettings;
 }
 
 /** 保存全局设置 */
 export async function saveSettings(settings: AppSettings): Promise<void> {
-    return SaveSettings(settings);
+    // dnsMode 联合类型断言回 wails3 生成的 DnsMode 枚举模型
+    return SettingsService.SaveSettings(settings as unknown as ModelAppSettings);
 }
 
 /** 获取本机活动物理网卡列表(后端 GetAdaptersAddresses 枚举) */
 export async function fetchNetworkInterfaces(): Promise<NetworkInterface[]> {
-    // wailsjs 生成的模型中 type 为 string,后端保证为 wired/wireless,此处断言收敛
-    return (await GetNetworkInterfaces()) as NetworkInterface[];
+    // wails3 生成的模型中 type 为 NicType 枚举,后端保证为 wired/wireless,此处断言收敛
+    return (await NicsService.GetNetworkInterfaces()) as unknown as NetworkInterface[];
 }
 
 /** 获取运行日志(临时 mock) */

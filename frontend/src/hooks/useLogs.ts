@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { fetchLogs } from '@/api/system';
-import { EventsOff, EventsOn } from '../../wailsjs/runtime/runtime';
+import { Events } from '@wailsio/runtime';
 import type { LogEntry, LogLevel } from '@/types';
 
 const MAX_LOGS = 50;
@@ -21,7 +21,9 @@ export function useLogs() {
 
     /** 订阅后端引擎日志事件(service:log):DNS 解析、路由增删等运行日志实时流入 */
     useEffect(() => {
-        const off = EventsOn('service:log', (payload: LogEntry) => {
+        // wails3 事件回调参数为含 data 字段的事件对象;Events.On 返回取消订阅函数
+        const off = Events.On('service:log', (ev) => {
+            const payload = ev.data as LogEntry;
             setLogs((prev) => [payload, ...prev.slice(0, MAX_LOGS - 1)]);
         });
         return () => off();
