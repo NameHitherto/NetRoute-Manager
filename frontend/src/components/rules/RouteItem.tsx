@@ -47,7 +47,7 @@ export function RouteItem({ item, isRunning, settings, onToggleCheck, onEdit, on
                                 variant={item.checked ? 'default' : 'secondary'}
                                 className="font-mono text-[10px]"
                             >
-                                {item.checked ? 'ENABLED' : 'DISABLED'}
+                                {item.checked ? '启用' : '不启用'}
                             </Badge>
                         )}
                     </div>
